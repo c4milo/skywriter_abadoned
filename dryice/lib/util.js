@@ -10,7 +10,7 @@ util.mkpath = function(_path) {
 	var dirs = _path.split('/');
 	var d = './';
 	
-	for(dir in dirs) {
+	for(var dir in dirs) {
 		d += dirs[dir] + '/';
 		
 		if(!path.existsSync(d)) {
@@ -58,7 +58,7 @@ util.copytree = function(src, dst) {
 		fs.mkdirSync(dst, 0755);
 	}
 	
-	for(name in filenames) {
+	for(var name in filenames) {
 		var file = basedir + '/' + filenames[name];
 		var newdst = dst + '/' + filenames[name];
 		
@@ -82,7 +82,7 @@ util.rmtree = function(_path) {
 	var filenames = fs.readdirSync(_path);
 	var basedir = _path;
 
-	for(name in filenames) {
+	for(var name in filenames) {
 		var file = basedir + '/' + filenames[name];
 		
 		if(fs.statSync(file).isDirectory()) {

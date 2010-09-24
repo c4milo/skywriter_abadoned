@@ -56,7 +56,7 @@ Dependency.prototype._get = function(depname, host, uri) {
 
 Dependency.prototype.install = function() {
 	var deps = config.dependencies;
-	for(name in deps) {
+	for(var name in deps) {
 		this._get(name, deps[name].host, deps[name].uri)
 	}
 };

@@ -7,6 +7,7 @@ var path 	= require('path'),
 
 var Builder = exports.Builder = function Builder(plugins) {	
 	this.plugins = plugins;
+	this.all = {};
 };
 
 Builder.prototype.getPluginMetadata = function(location) {
@@ -30,7 +31,7 @@ Builder.prototype.searchPlugin = function(plugin) {
 	var paths = config.plugins_path;
 	var location; 
 	
-	for(p in paths) {
+	for(var p in paths) {
 		location = paths[p] + '/' + plugin;
 		
 		if(path.existsSync(location)) {
@@ -63,15 +64,13 @@ then look at the set of plugins that are both in main and worker, and call that 
 (oops… before that step is: augment the plugin lists with the dependencies)
 almost all of it happens in _set_package_lists, with the exception of identifying the worker plugins */
 
-var all = {};
-Builder.prototype._resolveDependencies = function(plugins) {		
-	for(name in plugins) {
-		console.log('trying to add '+ name);
+Builder.prototype._resolveDependencies = function(plugins) {
+	var all = this.all;		
+	for(var name in plugins) {
 		if(all[name]) {
-			console.log(name + ' is already added');
-			return;
+			continue;
 		}
-		
+
 		var location = this.searchPlugin(name);
 		var metadata = this.getPluginMetadata(location);
 
@@ -80,10 +79,9 @@ Builder.prototype._resolveDependencies = function(plugins) {
 
 		var dependencies = metadata.dependencies; 
 		if(dependencies) {
-			console.log('Resolving dependencies for ' + name);
 			this._resolveDependencies(dependencies);			
 		}
-		console.log(metadata.name + ' resolved');
+
 		all[name] = metadata;
 	}
 };
@@ -101,18 +99,18 @@ Builder.prototype.build = function(outputDir) {
 	var script2loader = config.embedded.script2loader;
 
 	this._resolveDependencies(this.plugins); 
-	var plugins = all;
 
 	var worker = {};
 	var shared = {};
 	var main = {};	
+	var all = this.all;
 
-	for(name in plugins) {
-		var metadata = plugins[name];
-		
+	for(var name in all) {
+		var metadata = all[name];
+		console.log(name);		
 		var env = metadata.environments;
 		if(!env) {
-			console.log(name +' does not has environments defined ');
+			main[name] = metadata;
 			continue;
 		}
 		var isWorker = env.worker;
@@ -125,7 +123,7 @@ Builder.prototype.build = function(outputDir) {
 		} else if(isMain) {
 			main[name] = metadata;
 		}
-		console.log('\n ' + name + '\n');
+
 	}
 };
 
