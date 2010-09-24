@@ -1,8 +1,8 @@
 "use strict";
-var path	= require('path');
-var fs 		= require('fs');
-var util 	= require('./util');
-var config 	= require('./config');
+var path	= require('path'),
+	fs 		= require('fs'),
+	util 	= require('./util'),
+	config 	= require('./config');
 
 var Builder = require('./builder').Builder;
 

@@ -1,8 +1,9 @@
 "use strict";
-var path 	= require('path');
-var fs 		= require('fs');
-var util 	= require('./util');
-var config 	= require('./config');
+var path 	= require('path'),
+	fs 		= require('fs'),
+	util 	= require('./util'),
+	sys		= require('sys'),
+	config 	= require('./config');
 
 var Builder = exports.Builder = function Builder(plugins) {	
 	this.plugins = plugins;
@@ -15,9 +16,9 @@ Builder.prototype.getPluginMetadata = function(location) {
 	}
 	
 	var jsFile = fs.readFileSync(location, 'utf8');
-	jsFile = jsFile.replace(/\n/g, ""); //needed to be able to match the following regexp and avoid reading the file line by line
+	jsFile = jsFile.replace(/\n/g, "");
 	
-	var match = jsFile.match(/.+"define metadata";\((.+)\);"end/);
+	var match = jsFile.match(/.*"define metadata";\((.*)\);?"end/);
 	if(match) {
 		return JSON.parse(match[1]);
 	}
@@ -65,21 +66,24 @@ almost all of it happens in _set_package_lists, with the exception of identifyin
 var all = {};
 Builder.prototype._resolveDependencies = function(plugins) {		
 	for(name in plugins) {
+		console.log('trying to add '+ name);
 		if(all[name]) {
+			console.log(name + ' is already added');
 			return;
 		}
 		
 		var location = this.searchPlugin(name);
 		var metadata = this.getPluginMetadata(location);
-	
+
 		metadata.name = name;
-		metadata.location = location;		
-		
+		metadata.location = location;
+
 		var dependencies = metadata.dependencies; 
 		if(dependencies) {
+			console.log('Resolving dependencies for ' + name);
 			this._resolveDependencies(dependencies);			
 		}
-
+		console.log(metadata.name + ' resolved');
 		all[name] = metadata;
 	}
 };
@@ -102,28 +106,26 @@ Builder.prototype.build = function(outputDir) {
 	var worker = {};
 	var shared = {};
 	var main = {};	
-	
+
 	for(name in plugins) {
 		var metadata = plugins[name];
-		console.log(metadata + '\n');
 		
-		var isWorker = metadata.environments.worker;
-		var isMain = metadata.environments.main;
-		
-		if(isWorker) {
-			worker[name] = metadata;
+		var env = metadata.environments;
+		if(!env) {
+			console.log(name +' does not has environments defined ');
+			continue;
 		}
-		
-		if(isMain && !isWorker) {
-			main[name] = metadata;
-		}
-		
+		var isWorker = env.worker;
+		var isMain = env.main;
+
 		if(isWorker && isMain) {
 			shared[name] = metadata;
+		} else if(isWorker) {
+			worker[name] = metadata;
+		} else if(isMain) {
+			main[name] = metadata;
 		}
+		console.log('\n ' + name + '\n');
 	}
-	
-	
-	
 };
 

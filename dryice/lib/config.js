@@ -18,7 +18,8 @@ var embedded = {	files: {
 					preamble: 'dryice/assets/preamble.js',
 					script2loader: 'dryice/assets/script2loader.js',
 					
-					loader: 'dryice/thirdparty/tiki.js' 	
+					loader: 'dryice/thirdparty/tiki.js', 
+					compress: false //combine and compress files
 				};
 								
 var plugins_path = {	supported: 'platform/browser/plugins/supported', 
@@ -27,7 +28,11 @@ var plugins_path = {	supported: 'platform/browser/plugins/supported',
 						boot: 'platform/browser/plugins/boot' 
 					};
 					
-var dependencies = {	jquery: {host: 'code.jquery.com', port: 80, uri: '/jquery-1.4.2.js'} };
+var dependencies = {	jquery: { host: 'code.jquery.com', uri: '/jquery-1.4.2.js', 
+						 		  install_to: 'platform/browser/plugins/thirdparty/jquery.js'},
+						tiki: 	{ host: 'github.com', uri: '/pcwalton/tiki/tarball/master', 
+								  install_to: 'platform/embedded/static/tiki.js'}
+					};
 
 //config.buildDir = 'tmp'; //it's already specified in the manifest
 config.version = version;

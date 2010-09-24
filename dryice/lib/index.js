@@ -1,13 +1,13 @@
 "use strict";
-require.paths.unshift(  '../../platform/common/plugins/boot',
-                        '../../platform/common/plugins/supported');
+/*require.paths.unshift(  '../../platform/common/plugins/boot',
+                        '../../platform/common/plugins/supported');*/
 var exports = module.exports;
 
-
-
 var Platform = require('./platform').Platform;
-//exports.doc         = require('./doc');
-//exports.test         = require('./test');
+var Dependency = require('./dependency').Dependency;
+
 exports.platform = new Platform();
+exports.dependency = new Dependency();
+
 exports.config = require('./config');
 
