@@ -96,7 +96,7 @@ util.rmtree = function(_path) {
 		}
 	}
 	
-	if(rlevel == 0) {
+	if(rlevel === 0) {
 		if(path.existsSync(root)) {
 			fs.rmdirSync(root);
 		}

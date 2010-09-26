@@ -1,7 +1,7 @@
 "use strict";
-var http = require('http'),
-	fs 	 = require('fs'),
-	path = require('path');
+var http    = require('http'),
+    fs      = require('fs'),
+    path    = require('path');
 
 var config = require('./config');
 
@@ -57,6 +57,6 @@ Dependency.prototype._get = function(depname, host, uri) {
 Dependency.prototype.install = function() {
 	var deps = config.dependencies;
 	for(var name in deps) {
-		this._get(name, deps[name].host, deps[name].uri)
+		this._get(name, deps[name].host, deps[name].uri);
 	}
 };

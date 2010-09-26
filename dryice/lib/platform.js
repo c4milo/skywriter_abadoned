@@ -1,14 +1,14 @@
 "use strict";
-var path	= require('path'),
-	fs 		= require('fs'),
-	util 	= require('./util'),
-	config 	= require('./config');
+var path    = require('path'),
+	fs      = require('fs'),
+	util    = require('./util'),
+	config  = require('./config');
 
 var Builder = require('./builder').Builder;
 
 var Platform = exports.Platform = function Platform() {
   
-}
+};
 
 Platform.prototype.dist = function(type, manifest) {
 	if(!manifest) {
@@ -34,7 +34,7 @@ Platform.prototype.dist = function(type, manifest) {
             this._distXulRunner(manifest);
             break;
     }
-}
+};
 
 Platform.prototype._distEmbedded = function(manifest) {
     var version = config.version.number;
@@ -47,7 +47,7 @@ Platform.prototype._distEmbedded = function(manifest) {
 	util.mkpath(outputDir);
 	
 	//Run build process
-	var builder = new Builder(manifest.plugins);
+	var builder = new Builder(manifest);
 	builder.build(outputDir + '/prebuilt');
 	
 	util.copy('LICENSE.txt', outputDir + '/LICENSE.txt');
@@ -75,7 +75,7 @@ Platform.prototype._distEmbedded = function(manifest) {
 	this._updateVersion(outputDir + '/plugins/boot/skywriter/index.js', 'embedded');
     //compress source code
     //make tar.gz
-}
+};
 
 Platform.prototype._updateVersion = function(versionFile, platform) {
 	var data = fs.readFileSync(versionFile, 'utf8');
@@ -86,7 +86,7 @@ Platform.prototype._updateVersion = function(versionFile, platform) {
 	data = data.replace('PLATFORM', platform);
 	
 	fs.writeFileSync(versionFile, data, 'utf8');
-}
+};
 
 Platform.prototype.launch = function() {
-}
+};

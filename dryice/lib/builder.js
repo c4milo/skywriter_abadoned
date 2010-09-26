@@ -1,12 +1,13 @@
 "use strict";
-var path 	= require('path'),
-	fs 		= require('fs'),
-	util 	= require('./util'),
-	sys		= require('sys'),
-	config 	= require('./config');
+var path    = require('path'),
+	fs      = require('fs'),
+	util    = require('./util'),
+	sys     = require('sys'),
+	config  = require('./config');
 
-var Builder = exports.Builder = function Builder(plugins) {	
-	this.plugins = plugins;
+var Builder = exports.Builder = function Builder(manifest) {
+    this.manifest = manifest;	
+	this.plugins = manifest.plugins; //TODO include skywriter plugin which is the boot
 	this.all = {};
 };
 
@@ -66,6 +67,7 @@ almost all of it happens in _set_package_lists, with the exception of identifyin
 
 Builder.prototype._resolveDependencies = function(plugins) {
 	var all = this.all;		
+	
 	for(var name in plugins) {
 		if(all[name]) {
 			continue;
@@ -87,32 +89,43 @@ Builder.prototype._resolveDependencies = function(plugins) {
 };
 
 Builder.prototype.build = function(outputDir) {
+    var all = this.all;
+
 	if(path.existsSync(outputDir)) {
 		util.rmtree(outputDir);
 	}
 	util.mkpath(outputDir);
 	
-	var files = config.embedded.files;
-	var loader = config.embedded.loader;
-	var preamble = config.embedded.preamble;
-	var boot = config.embedded.boot;
-	var script2loader = config.embedded.script2loader;
-
 	this._resolveDependencies(this.plugins); 
+
+    //just for embedded releases, most of the times, people do not want to include jquery.
+    //Therefore, by default, we are going to include it always; 
+    //unless people explicitly specify, in the manifest, that they do not want to include it.
+     
+	var includeJQuery = this.manifest.include_jquery;	
+	if(includeJQuery === false) {
+	    var location = this.searchPlugin('globaljquery');
+	    var md = this.getPluginMetadata(location);
+	    
+	    md.name = 'jquery'; 
+	    md.location = location;
+	    
+	    all[md.name] = md;
+	}
 
 	var worker = {};
 	var shared = {};
 	var main = {};	
-	var all = this.all;
 
 	for(var name in all) {
 		var metadata = all[name];
-		console.log(name);		
+	
 		var env = metadata.environments;
 		if(!env) {
 			main[name] = metadata;
 			continue;
 		}
+		
 		var isWorker = env.worker;
 		var isMain = env.main;
 
@@ -123,7 +136,66 @@ Builder.prototype.build = function(outputDir) {
 		} else if(isMain) {
 			main[name] = metadata;
 		}
-
 	}
+	
+	this._writeFiles(outputDir, main, shared, worker);
+};
+
+Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
+    var files = config.embedded.files;
+	var loaderFile = config.embedded.loader;
+	var preambleFile = config.embedded.preamble;
+	var bootFile = config.embedded.boot;
+	var script2loaderFile = config.embedded.script2loader;
+
+    var sharedFile = outputDir + '/' + files.shared;
+    var mainFile = outputDir + '/' + files.main;
+    var workerFile = outputDir + '/' + files.worker;
+    
+    //Let's call packages either main, shared or worker plugins.
+    //Combine plugins into every package. 
+    //This process also wrap each plugin to register it with the module system
+    //and writes the package metadata, which is the same
+    //plugin metadata but with all dependencies together.
+     
+    var sharedPackage = this._combineFiles(shared);
+    var workerPackage = this._combineFiles(worker);
+    var mainPackage = this._combineFiles(main);
+
+    //package postprocessing
+    //shared
+    var preamble = fs.readFileSync(preambleFile, 'utf8');
+    var loader = fs.readFileSync(loaderFile, 'utf8');
+    var script2loader = fs.readFileSync(script2loaderFile, 'utf8'); 
+    
+    var sharedMetadata = "skywriter.tiki.require('skywriter:plugins').catalog.registerMetadata("+JSON.stringify(shared)+");";
+    
+    sharedPackage = preamble + loader + sharedPackage + sharedMetadata + script2loader;
+    
+    fs.writeFileSync(sharedFile, sharedPackage, 'utf8');
+
+    //main
+    
+    
+    //worker
+    
+};
+
+Builder.prototype._combineFiles = function(package) {
+    var data = '';
+    for(var plugin in package) {
+        
+        //data += JSON.stringify(plugin); //write metadata
+        
+        if(fs.statSync(plugin.location).isDirectory()) {
+        
+        } else {
+            
+        }
+    }
+    
+    return data;
+    //write package metadata using JSON.stringify()
+    //combine package files and write them. 
 };
 
