@@ -1,7 +1,8 @@
 {
-	"plugins": {"embedded": "0.0.0", "stylesheet": "0.0.0", "js_syntax": "0.0.0"},
+	"plugins": {"skywriter": "0.0.0", "embedded": "0.0.0", "stylesheet": "0.0.0", "js_syntax": "0.0.0"},
     "output_dir": "tmp/SkywriterDropIn",
     "include_sample": true, 
     "include_jquery": false,
+    "include_test": false,
     "compress": false
 }

@@ -1,8 +1,6 @@
 "use strict";
 var fs = require('fs');
-var sys = require('sys');
 var path = require('path');
-var EventEmitter = require('events').EventEmitter;
 
 var util = exports;
 
@@ -100,6 +98,39 @@ util.rmtree = function(_path) {
 		if(path.existsSync(root)) {
 			fs.rmdirSync(root);
 		}
+	}
+};
+
+var files = []; 
+var wf_rlevel = 0;
+util.walkfiles = function(_path, filter) {
+    if(fs.statSync(_path).isFile()) {
+		throw new Error(_path + ' is a file. You should provide a directory path');
+	}
+	
+	if(!filter) {
+	    filter = '.*';
+	}
+	
+	var filenames = fs.readdirSync(_path);
+	var basedir = _path;
+
+	for(var name in filenames) {
+		var file = basedir + '/' + filenames[name];
+		
+		if(fs.statSync(file).isDirectory()) {
+		    wf_rlevel++;
+			util.walkfiles(file);
+			wf_rlevel--;
+		}
+		
+		if(file.match(filter)) {
+		    files.push(file);    
+		}
+	}
+	
+	if(wf_rlevel === 0) {
+	    return files;
 	}
 };
 

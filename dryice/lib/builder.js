@@ -112,16 +112,18 @@ Builder.prototype.build = function(outputDir) {
 	    
 	    all[md.name] = md;
 	}
-
+    
+    //Let's call packages either main, shared or worker plugins.
+    //packaging
 	var worker = {};
 	var shared = {};
 	var main = {};	
 
 	for(var name in all) {
 		var metadata = all[name];
-	
+	    
 		var env = metadata.environments;
-		if(!env) {
+	    if(!env) {
 			main[name] = metadata;
 			continue;
 		}
@@ -152,15 +154,18 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     var mainFile = outputDir + '/' + files.main;
     var workerFile = outputDir + '/' + files.worker;
     
-    //Let's call packages either main, shared or worker plugins.
     //Combine plugins into every package. 
-    //This process also wrap each plugin to register it with the module system
+    //This process also wraps each plugin to register it with the module system
     //and writes the package metadata, which is the same
     //plugin metadata but with all dependencies together.
+    
+    for(var p in shared) {
+        console.log('shared '+ p);
+    }
      
-    var sharedPackage = this._combineFiles(shared);
-    var workerPackage = this._combineFiles(worker);
-    var mainPackage = this._combineFiles(main);
+    var sharedPackage = this._combineJsFiles(shared);
+    var workerPackage = this._combineJsFiles(worker);
+    var mainPackage = this._combineJsFiles(main);
 
     //package postprocessing
     //shared
@@ -171,7 +176,7 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     var sharedMetadata = "skywriter.tiki.require('skywriter:plugins').catalog.registerMetadata("+JSON.stringify(shared)+");";
     
     sharedPackage = preamble + loader + sharedPackage + sharedMetadata + script2loader;
-    
+
     fs.writeFileSync(sharedFile, sharedPackage, 'utf8');
 
     //main
@@ -181,21 +186,49 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     
 };
 
-Builder.prototype._combineFiles = function(package) {
+Builder.prototype._combineJsFiles = function(package) {
     var data = '';
-    for(var plugin in package) {
+
+    for(var name in package) {
+        var plugin = package[name];
+        var location = plugin.location;
         
-        //data += JSON.stringify(plugin); //write metadata
+        data += "\n;bespin.tiki.register('::" + name + "', " +
+                    "{'name': " + name + ", " +
+                    "'dependencies': " + JSON.stringify(plugin.dependencies || {}) + 
+                "});";
         
-        if(fs.statSync(plugin.location).isDirectory()) {
-        
+        //Hack so that web workers can determine whether they need to load the boot
+        //plugin metadata.
+        if(name === 'skywriter') {
+            //ask in #skywriter if this line can be moved to index.js or some js in plugins/boot/skywriter
+            data += ' skywriter.bootLoaded = true;'; 
+        }
+
+        var files;
+        if(fs.statSync(location).isDirectory()) {
+            files = util.walkfiles(location, '.js$');
         } else {
-            
+            files = [location];
+            name = 'index';
+        }
+        
+        for(var file in files) {
+            if(!this.manifest.include_test &&
+                files[file].match('tests')) {
+                continue;
+            }
+            var pluginFile = files[file];
+
+            if(path.extname(pluginFile) === '.js') {
+                data += "\n skywriter.tiki.module('" + name + ":" + path.basename(pluginFile, '.js') + "', " + 
+                        "function(require, exports, module) { \n" +
+                            fs.readFileSync(pluginFile, 'utf8') + 
+                        "});";                
+            }
         }
     }
     
     return data;
-    //write package metadata using JSON.stringify()
-    //combine package files and write them. 
 };
 

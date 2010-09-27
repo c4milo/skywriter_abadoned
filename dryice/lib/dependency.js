@@ -5,16 +5,20 @@ var http    = require('http'),
 
 var config = require('./config');
 
-var Dependency = exports.Dependency = function() {
+//FIXME dyrice is trying to use tiki before the downloaded is complete.
+// So we need implement message passing using EventEmitter 
 
+var Dependency = exports.Dependency = function() {
+    this.tiki = '';
+    this.tikiComponents = 3;
+    this.tikiComponentsDownloaded = 0;
+    this.tikiPreamble = '';
+    this.tikiPostamble = '';
 };
 
 Dependency.prototype._install = function(name, data) {
-	fs.writeFile(config.dependencies[name].install_to, data, function(err) {
-		if(err) {
-			throw err;
-		}
-	});
+    fs.writeFileSync(config.dependencies[name].install_to, data);
+    console.log('[Dependency] '+ name + ' installed in ' + config.dependencies[name].install_to);
 };
 
 Dependency.prototype.installJQuery = function(name, data) {
@@ -23,9 +27,29 @@ Dependency.prototype.installJQuery = function(name, data) {
 	this._install(name, data);
 };
 
+
 Dependency.prototype.installTiki = function(name, data) {
-	//TODO
-	this._install(name, data);
+    if(name == 'tiki_preamble') {
+        this.tikiPreamble = data;
+    } else if(name == 'tiki_postamble') {
+        this.tikiPostamble = data;
+    } else {
+        this.tiki = data;
+    }
+    
+	this.tikiComponentsDownloaded++;
+	
+	if(this.tikiComponentsDownloaded === this.tikiComponents) {
+	    var template = fs.readFileSync(config.embedded.tiki_template, 'utf8');
+        
+        template = template.replace('TIKI_PREAMBLE', this.tikiPreamble);
+        template = template.replace(/TIKI_PACKAGE_ID/g, '::tiki/1.0.0');
+        template = template.replace('TIKI_VERSION', '1.0.0');
+        template = template.replace('TIKI_BODY', this.tiki);
+        template = template.replace('TIKI_POSTAMBLE', this.tikiPostamble);
+	    
+	    this._install('tiki', template);	    
+	}
 };
 
 Dependency.prototype._get = function(depname, host, uri) {
@@ -45,7 +69,7 @@ Dependency.prototype._get = function(depname, host, uri) {
 		response.on('end', function(){
 			if(depname == 'jquery') {
 				self.installJQuery(depname, data);
-			} else if(depname == 'tiki') {
+			} else if(depname.match('tiki')) {
 				self.installTiki(depname, data);
 			} else {
 				self._install(depname, data);
@@ -57,6 +81,11 @@ Dependency.prototype._get = function(depname, host, uri) {
 Dependency.prototype.install = function() {
 	var deps = config.dependencies;
 	for(var name in deps) {
-		this._get(name, deps[name].host, deps[name].uri);
+        if(!path.existsSync(deps[name].install_to)) {
+            console.log('[Dependency] Downloading ' + name + '...');
+		    this._get(name, deps[name].host, deps[name].uri);
+	    } else {
+	        console.log('[Dependency] ' + name + ' already exists. Skipping');
+	    }
 	}
 };
