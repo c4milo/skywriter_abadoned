@@ -7,7 +7,7 @@ var path    = require('path'),
 
 var Builder = exports.Builder = function Builder(manifest) {
     this.manifest = manifest;	
-	this.plugins = manifest.plugins; //TODO include skywriter plugin which is the boot
+	this.plugins = manifest.plugins;
 	this.all = {};
 };
 
@@ -158,11 +158,6 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     //This process also wraps each plugin to register it with the module system
     //and writes the package metadata, which is the same
     //plugin metadata but with all dependencies together.
-    
-    for(var p in shared) {
-        console.log('shared '+ p);
-    }
-     
     var sharedPackage = this._combineJsFiles(shared);
     var workerPackage = this._combineJsFiles(worker);
     var mainPackage = this._combineJsFiles(main);
@@ -173,9 +168,13 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     var loader = fs.readFileSync(loaderFile, 'utf8');
     var script2loader = fs.readFileSync(script2loaderFile, 'utf8'); 
     
-    var sharedMetadata = "skywriter.tiki.require('skywriter:plugins').catalog.registerMetadata("+JSON.stringify(shared)+");";
+    var tikiPackage = fs.readFileSync(config.embedded.tiki_package, 'utf8');
+    var sharedMetadata = tikiPackage.replace('PACKAGE_NAME', 'skywriter:plugins');
+    sharedMetadata = sharedMetadata.replace('PACKAGE_METADATA_OBJECT', JSON.stringify(shared));
     
     sharedPackage = preamble + loader + sharedPackage + sharedMetadata + script2loader;
+    
+    console.log(sharedPackage);
 
     fs.writeFileSync(sharedFile, sharedPackage, 'utf8');
 
@@ -187,22 +186,23 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
 };
 
 Builder.prototype._combineJsFiles = function(package) {
+    var tikiModule = fs.readFileSync(config.embedded.tiki_module, 'utf8');
+    var tikiRegister = fs.readFileSync(config.embedded.tiki_register, 'utf8');
     var data = '';
 
     for(var name in package) {
         var plugin = package[name];
         var location = plugin.location;
         
-        data += "\n;bespin.tiki.register('::" + name + "', " +
-                    "{'name': " + name + ", " +
-                    "'dependencies': " + JSON.stringify(plugin.dependencies || {}) + 
-                "});";
+        var register = tikiRegister.replace(/PLUGIN_NAME/g, name);
+        register = register.replace('PLUGIN_DEPS_OBJECT', JSON.stringify(plugin.dependencies || {}));
+        data += register;
         
         //Hack so that web workers can determine whether they need to load the boot
         //plugin metadata.
         if(name === 'skywriter') {
             //ask in #skywriter if this line can be moved to index.js or some js in plugins/boot/skywriter
-            data += ' skywriter.bootLoaded = true;'; 
+            data += 'skywriter.bootLoaded = true;\n'; 
         }
 
         var files;
@@ -210,7 +210,6 @@ Builder.prototype._combineJsFiles = function(package) {
             files = util.walkfiles(location, '.js$');
         } else {
             files = [location];
-            name = 'index';
         }
         
         for(var file in files) {
@@ -221,10 +220,16 @@ Builder.prototype._combineJsFiles = function(package) {
             var pluginFile = files[file];
 
             if(path.extname(pluginFile) === '.js') {
-                data += "\n skywriter.tiki.module('" + name + ":" + path.basename(pluginFile, '.js') + "', " + 
-                        "function(require, exports, module) { \n" +
-                            fs.readFileSync(pluginFile, 'utf8') + 
-                        "});";                
+                var match = pluginFile.match(name+'/(?!.*'+name+')(.+)\.js');
+                var modulePath = 'index';
+                if(match) {
+                    modulePath = match[1];
+                }
+                
+                var module = tikiModule.replace(/PLUGIN_NAME/g, name);
+                module = module.replace(/PLUGIN_MODULE/g, modulePath);
+                module = module.replace(/PLUGIN_BODY/, fs.readFileSync(pluginFile, 'utf8'));
+                data += module;
             }
         }
     }

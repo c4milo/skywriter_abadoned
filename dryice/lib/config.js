@@ -18,9 +18,18 @@ var embedded = {	files: {
 					preamble: 'dryice/assets/preamble.js',
 					script2loader: 'dryice/assets/script2loader.js',
 					tiki_template: 'dryice/assets/tiki_template.js',
+					tiki_module: 'dryice/assets/tiki_module.js',
+					tiki_register: 'dryice/assets/tiki_register.js',
+					tiki_package: 'dryice/assets/tiki_package.js', 
 					
 					loader: 'platform/embedded/static/tiki.js',
-					worker: 'platform/embedded/static/worker.js'
+					worker: 'platform/embedded/static/worker.js',
+					 
+	                plugins_path: { supported: 'plugins/supported', 
+                    				thirdparty: 'plugins/thirdparty', 
+                    				labs: 'plugins/labs', 
+                    				boot: 'plugins/boot' 
+                    		    }
 				};
 								
 var plugins_path = {	supported: 'platform/browser/plugins/supported', 

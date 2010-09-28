@@ -46,6 +46,9 @@ Platform.prototype._distEmbedded = function(manifest) {
 
 	util.mkpath(outputDir);
 	
+	util.copytree('platform/browser/plugins', outputDir + '/plugins');
+	this._updateVersion(outputDir + '/' + config.embedded.plugins_path.boot + '/skywriter/index.js', 'embedded');
+	
 	//Run build process
 	var builder = new Builder(manifest);
 	builder.build(outputDir + '/prebuilt');
@@ -62,17 +65,14 @@ Platform.prototype._distEmbedded = function(manifest) {
 	var lib = outputDir + '/lib';
 	fs.mkdirSync(lib, 0755);
 	
-	//util.copy('platform/embedded/static/tiki.js', lib + '/tiki.js');
+	util.copy('platform/embedded/static/tiki.js', lib + '/tiki.js');
 	util.copy('platform/embedded/static/worker.js', lib + '/worker.js');
 	util.copytree('dryice', lib + '/dryice');
-	
-	util.copytree('platform/browser/plugins', outputDir + '/plugins');
-	//util.copytree('platform/common/plugins', outputDir + '/plugins');
 	
 	util.copy('platform/embedded/sample.json', outputDir + '/sample.json');
 	util.copy('platform/embedded/Jakefile', outputDir + '/Jakefile');
 	
-	this._updateVersion(outputDir + '/plugins/boot/skywriter/index.js', 'embedded');
+
     //compress source code
     //make tar.gz
 };
