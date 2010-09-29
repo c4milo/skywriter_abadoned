@@ -228,7 +228,7 @@ Builder.prototype._combineJsFiles = function(package) {
                 
                 var module = tikiModule.replace(/PLUGIN_NAME/g, name);
                 module = module.replace(/PLUGIN_MODULE/g, modulePath);
-                module = module.replace(/PLUGIN_BODY/, fs.readFileSync(pluginFile, 'utf8'));
+                module = module.replace('PLUGIN_BODY', fs.readFileSync(pluginFile, 'utf8'));
                 data += module;
             }
         }

@@ -398,9 +398,9 @@ exports.Plugin.prototype = {
         // Remove all traces of the plugin.
         var pluginName = this.name;
 
-        var nameMatch = new RegExp("^" + pluginName + '$');
-        var moduleMatch = new RegExp('^::' + pluginName + ':');
-        var packageMatch = new RegExp("^::" + pluginName + '$');
+        var nameMatch = new RegExp("^" + pluginName + "$");
+        var moduleMatch = new RegExp("^::" + pluginName + ":");
+        var packageMatch = new RegExp("^::" + pluginName + "$");
 
         var sandbox = require.sandbox;
         var loader = require.loader;
