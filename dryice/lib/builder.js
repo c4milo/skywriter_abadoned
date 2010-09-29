@@ -195,8 +195,8 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
 Builder.prototype._combineFiles = function(package) {
     var tikiModule = fs.readFileSync(config.embedded.tiki_module, 'utf8');
     var tikiRegister = fs.readFileSync(config.embedded.tiki_register, 'utf8');
-    var combineJs = '';
-    var combineCss = '';
+    var combinedJs = '';
+    var combinedCss = '';
 
     for(var name in package) {
         var plugin = package[name];
@@ -204,13 +204,13 @@ Builder.prototype._combineFiles = function(package) {
         
         var register = tikiRegister.replace(/PLUGIN_NAME/g, name);
         register = register.replace(/PLUGIN_DEPS_OBJECT/, JSON.stringify(plugin.dependencies || {}));
-        combineJs += register;
+        combinedJs += register;
         
         //Hack so that web workers can determine whether they need to load the boot
         //plugin metadata.
         if(name === 'skywriter') {
             //ask in #skywriter if this line can be moved to index.js or some js in plugins/boot/skywriter
-            combineJs += 'skywriter.bootLoaded = true;\n'; 
+            combinedJs += 'skywriter.bootLoaded = true;\n'; 
         }
 
         var files;
@@ -239,18 +239,18 @@ Builder.prototype._combineFiles = function(package) {
                 var module = tikiModule.replace(/PLUGIN_NAME/g, name);
                 module = module.replace(/PLUGIN_MODULE/g, modulePath);
                 module = module.replace(/PLUGIN_BODY/, fs.readFileSync(pluginFile, 'utf8'));
-                combineJs += module;
+                combinedJs += module;
                 break;
               case '.css':
-                combineCss += fs.readFileSync(pluginFile, 'utf8');
+                combinedCss += fs.readFileSync(pluginFile, 'utf8');
                 break;
             }
             //console.log(pluginFile);
         }
     
-        combineCss = combineCss.replace(/url\('?(.+)images\/(.+)'?\)/, "url('resources/"+name+"/$1/images/$2')");        
+        combinedCss = combinedCss.replace(/url\('?(.+)images\/(.+)'?\)/, "url('resources/"+name+"/$1/images/$2')");        
     }
     
-    return {js: combineJs, css: combineCss};
+    return {js: combinedJs, css: combinedCss};
 };
 
