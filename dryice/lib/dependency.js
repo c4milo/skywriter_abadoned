@@ -5,8 +5,8 @@ var http    = require('http'),
 
 var config = require('./config');
 
-//FIXME dyrice is trying to use tiki before the downloaded is complete.
-// So we need implement message passing using EventEmitter 
+//FIXME dyrice is trying to use tiki before the download is complete.
+// So we need implement message passing using EventEmitter or Promises. 
 
 var Dependency = exports.Dependency = function() {
     this.tiki = '';

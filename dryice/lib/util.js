@@ -101,7 +101,7 @@ util.rmtree = function(_path) {
 	}
 };
 
-var files = []; 
+var files = [];
 var wf_rlevel = 0;
 util.walkfiles = function(_path, filter) {
     if(fs.statSync(_path).isFile()) {
@@ -120,17 +120,19 @@ util.walkfiles = function(_path, filter) {
 		
 		if(fs.statSync(file).isDirectory()) {
 		    wf_rlevel++;
-			util.walkfiles(file);
+			util.walkfiles(file, filter);
 			wf_rlevel--;
 		}
 		
 		if(file.match(filter)) {
-		    files.push(file);    
+		    files.push(file);
 		}
 	}
 	
 	if(wf_rlevel === 0) {
-	    return files;
+		var cpfiles = files; 
+		files = [];
+	    return cpfiles;
 	}
 };
 

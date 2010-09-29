@@ -153,14 +153,15 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     var sharedFile = outputDir + '/' + files.shared;
     var mainFile = outputDir + '/' + files.main;
     var workerFile = outputDir + '/' + files.worker;
+    var cssFile = outputDir + '/' + files.css;
     
     //Combine plugins into every package. 
     //This process also wraps each plugin to register it with the module system
     //and writes the package metadata, which is the same
     //plugin metadata but with all dependencies together.
-    var sharedPackage = this._combineJsFiles(shared);
-    var workerPackage = this._combineJsFiles(worker);
-    var mainPackage = this._combineJsFiles(main);
+    var sharedPackage = this._combineFiles(shared);
+    var workerPackage = this._combineFiles(worker);
+    var mainPackage = this._combineFiles(main);
 
     //package postprocessing
     //shared
@@ -169,14 +170,20 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     var script2loader = fs.readFileSync(script2loaderFile, 'utf8'); 
     
     var tikiPackage = fs.readFileSync(config.embedded.tiki_package, 'utf8');
-    var sharedMetadata = tikiPackage.replace('PACKAGE_NAME', 'skywriter:plugins');
-    sharedMetadata = sharedMetadata.replace('PACKAGE_METADATA_OBJECT', JSON.stringify(shared));
+    var sharedMetadata = tikiPackage.replace(/PACKAGE_NAME/, 'skywriter:plugins');
+    sharedMetadata = sharedMetadata.replace(/PACKAGE_METADATA_OBJECT/, JSON.stringify(shared));
     
-    sharedPackage = preamble + loader + sharedPackage + sharedMetadata + script2loader;
+    sharedPackage.js = preamble + loader + sharedPackage.js + sharedMetadata + script2loader;
     
-    console.log(sharedPackage);
+    fs.writeFileSync(sharedFile, sharedPackage.js, 'utf8');
 
-    fs.writeFileSync(sharedFile, sharedPackage, 'utf8');
+    //combining CSS data
+    var sharedCss = sharedPackage.css || '';
+    var workerCss = workerPackage.css || '';
+    var mainCss = mainPackage.css || '';
+    
+    fs.writeFileSync(cssFile, sharedCss + workerCss + mainCss);
+    
 
     //main
     
@@ -185,41 +192,44 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     
 };
 
-Builder.prototype._combineJsFiles = function(package) {
+Builder.prototype._combineFiles = function(package) {
     var tikiModule = fs.readFileSync(config.embedded.tiki_module, 'utf8');
     var tikiRegister = fs.readFileSync(config.embedded.tiki_register, 'utf8');
-    var data = '';
+    var combineJs = '';
+    var combineCss = '';
 
     for(var name in package) {
         var plugin = package[name];
         var location = plugin.location;
         
         var register = tikiRegister.replace(/PLUGIN_NAME/g, name);
-        register = register.replace('PLUGIN_DEPS_OBJECT', JSON.stringify(plugin.dependencies || {}));
-        data += register;
+        register = register.replace(/PLUGIN_DEPS_OBJECT/, JSON.stringify(plugin.dependencies || {}));
+        combineJs += register;
         
         //Hack so that web workers can determine whether they need to load the boot
         //plugin metadata.
         if(name === 'skywriter') {
             //ask in #skywriter if this line can be moved to index.js or some js in plugins/boot/skywriter
-            data += 'skywriter.bootLoaded = true;\n'; 
+            combineJs += 'skywriter.bootLoaded = true;\n'; 
         }
 
         var files;
         if(fs.statSync(location).isDirectory()) {
-            files = util.walkfiles(location, '.js$');
+            files = util.walkfiles(location, '\.(js|css)$');
         } else {
             files = [location];
         }
-        
+
         for(var file in files) {
             if(!this.manifest.include_test &&
                 files[file].match('tests')) {
                 continue;
             }
+            
             var pluginFile = files[file];
-
-            if(path.extname(pluginFile) === '.js') {
+            
+            switch(path.extname(pluginFile)) {
+              case '.js':
                 var match = pluginFile.match(name+'/(?!.*'+name+')(.+)\.js');
                 var modulePath = 'index';
                 if(match) {
@@ -228,12 +238,19 @@ Builder.prototype._combineJsFiles = function(package) {
                 
                 var module = tikiModule.replace(/PLUGIN_NAME/g, name);
                 module = module.replace(/PLUGIN_MODULE/g, modulePath);
-                module = module.replace('PLUGIN_BODY', fs.readFileSync(pluginFile, 'utf8'));
-                data += module;
+                module = module.replace(/PLUGIN_BODY/, fs.readFileSync(pluginFile, 'utf8'));
+                combineJs += module;
+                break;
+              case '.css':
+                combineCss += fs.readFileSync(pluginFile, 'utf8');
+                break;
             }
+            //console.log(pluginFile);
         }
+    
+        combineCss = combineCss.replace(/url\('?(.+)images\/(.+)'?\)/, "url('resources/"+name+"/$1/images/$2')");        
     }
     
-    return data;
+    return {js: combineJs, css: combineCss};
 };
 

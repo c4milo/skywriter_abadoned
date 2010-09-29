@@ -46,6 +46,7 @@ Platform.prototype._distEmbedded = function(manifest) {
 
 	util.mkpath(outputDir);
 	
+	//versioning skywriter embedded 
 	util.copytree('platform/browser/plugins', outputDir + '/plugins');
 	this._updateVersion(outputDir + '/' + config.embedded.plugins_path.boot + '/skywriter/index.js', 'embedded');
 	
@@ -71,7 +72,6 @@ Platform.prototype._distEmbedded = function(manifest) {
 	
 	util.copy('platform/embedded/sample.json', outputDir + '/sample.json');
 	util.copy('platform/embedded/Jakefile', outputDir + '/Jakefile');
-	
 
     //compress source code
     //make tar.gz
