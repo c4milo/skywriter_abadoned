@@ -183,7 +183,6 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
     var mainCss = mainPackage.css || '';
     
     fs.writeFileSync(cssFile, sharedCss + workerCss + mainCss);
-    
 
     //main
     
@@ -195,10 +194,12 @@ Builder.prototype._writeFiles = function(outputDir, main, shared, worker) {
 Builder.prototype._combineFiles = function(package) {
     var tikiModule = fs.readFileSync(config.embedded.tiki_module, 'utf8');
     var tikiRegister = fs.readFileSync(config.embedded.tiki_register, 'utf8');
+    var templaterWrap = fs.readFileSync(config.embedded.templater_wrap, 'utf8');
     var combinedJs = '';
     var combinedCss = '';
-
+    
     for(var name in package) {
+        var combinedHtml = {};
         var plugin = package[name];
         var location = plugin.location;
         
@@ -215,7 +216,7 @@ Builder.prototype._combineFiles = function(package) {
 
         var files;
         if(fs.statSync(location).isDirectory()) {
-            files = util.walkfiles(location, '\.(js|css)$');
+            files = util.walkfiles(location, '\.(js|css|htmlt)$');
         } else {
             files = [location];
         }
@@ -241,13 +242,21 @@ Builder.prototype._combineFiles = function(package) {
                 module = module.replace(/PLUGIN_BODY/, fs.readFileSync(pluginFile, 'utf8'));
                 combinedJs += module;
                 break;
+              
               case '.css':
                 combinedCss += fs.readFileSync(pluginFile, 'utf8');
                 break;
+                
+              case '.htmlt':
+                combinedHtml[path.basename(pluginFile)] = fs.readFileSync(pluginFile, 'utf8');
+                break;
             }
-            //console.log(pluginFile);
         }
-    
+        
+        if(Object.keys(combinedHtml).length) {
+            combinedJs += templaterWrap.replace(/TEMPLATES_OBJ/, JSON.stringify(combinedHtml));            
+        }
+
         combinedCss = combinedCss.replace(/url\('?(.+)images\/(.+)'?\)/, "url('resources/"+name+"/$1/images/$2')");        
     }
     

@@ -130,9 +130,10 @@ util.walkfiles = function(_path, filter) {
 	}
 	
 	if(wf_rlevel === 0) {
-		var cpfiles = files; 
+		var _files = files; 
 		files = [];
-	    return cpfiles;
+		
+	    return _files;
 	}
 };
 

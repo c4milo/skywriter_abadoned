@@ -20,7 +20,8 @@ var embedded = {	files: {
 					tiki_template: 'dryice/assets/tiki_template.js',
 					tiki_module: 'dryice/assets/tiki_module.js',
 					tiki_register: 'dryice/assets/tiki_register.js',
-					tiki_package: 'dryice/assets/tiki_package.js', 
+					tiki_package: 'dryice/assets/tiki_package.js',
+					templater_wrap: 'dryice/assets/templater_wrap.js',
 					
 					loader: 'platform/embedded/static/tiki.js',
 					worker: 'platform/embedded/static/worker.js',
