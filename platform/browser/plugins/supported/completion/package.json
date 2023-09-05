@@ -3,7 +3,7 @@
     "dependencies": {
         "canon": "0.0.0",
         "ctags": "0.0.0",
-        "jquery": "0.0.0",
+        "jquery": "3.5.0",
         "rangeutils": "0.0.0",
         "underscore": "0.0.0"
     },
