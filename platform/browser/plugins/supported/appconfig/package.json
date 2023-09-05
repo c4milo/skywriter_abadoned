@@ -1,7 +1,7 @@
 {
     "description": "Instantiates components and displays the GUI based on configuration.",
     "dependencies": {
-        "jquery": "0.0.0",
+        "jquery": "3.5.0",
         "settings": "0.0.0",
         "canon": "0.0.0"
     },
